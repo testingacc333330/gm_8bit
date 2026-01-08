@@ -116,16 +116,11 @@ void hook_BroadcastVoiceData(IClient* cl, uint nBytes, char* data, int64 xuid) {
 
 		//Recompress the stream
 		uint64_t steamid = *(uint64_t*)data;
-		int bytesWritten = SteamVoice::CompressIntoBuffer(steamid, codec, decompressedBuffer, samples*2, recompressBuffer, sizeof(recompressBuffer), 24000);
+		int bytesWritten = SteamVoice::CompressIntoBuffer(steamid, pState.codec, decompressedBuffer, samples*2, recompressBuffer, sizeof(recompressBuffer), 24000);
 		if (bytesWritten <= 0) {
 			return detour_BroadcastVoiceData.GetTrampoline<SV_BroadcastVoiceData>()(cl, nBytes, data, xuid);
 		}
 
-		#ifdef _DEBUG
-			std::cout << "Retransmitted pckt size: " << bytesWritten << std::endl;
-		#endif
-
-		//Broadcast voice data with our updated compressed data.
 		return detour_BroadcastVoiceData.GetTrampoline<SV_BroadcastVoiceData>()(cl, bytesWritten, recompressBuffer, xuid);
 	}
 	else {
@@ -169,28 +164,27 @@ LUA_FUNCTION_STATIC(eightbit_setdesamplerate) {
 }
 
 LUA_FUNCTION_STATIC(eightbit_enableEffect) {
-	int id = LUA->GetNumber(1);
-	int eff = LUA->GetNumber(2);
+    int id = (int)LUA->GetNumber(1);
+    int eff = (int)LUA->GetNumber(2);
 
-	auto& afflicted_players = g_eightbit->afflictedPlayers;
-	if (afflicted_players.find(id) != afflicted_players.end()) {
-		if (eff == AudioEffects::EFF_NONE) {
-			IVoiceCodec* codec = std::get<0>(afflicted_players.at(id));
-			delete codec;
-			afflicted_players.erase(id);
-		}
-		else {
-			std::get<1>(afflicted_players.at(id)) = eff;
-		}
-		return 0;
-	}
-	else if(eff != AudioEffects::EFF_NONE) {
+    if (id < 0 || id > 128) return 0;
 
-		IVoiceCodec* codec = new SteamOpus::Opus_FrameDecoder();
-		codec->Init(5, 24000);
-		afflicted_players.insert(std::pair<int, std::tuple<IVoiceCodec*, int>>(id, std::tuple<IVoiceCodec*, int>(codec, eff)));
-	}
-	return 0;
+    auto& pState = g_eightbit->players[id];
+
+    if (eff == AudioEffects::EFF_NONE) {
+        if (pState.codec) {
+            pState.codec->Release();
+            pState.codec = nullptr;
+        }
+        pState.effect = AudioEffects::EFF_NONE;
+    } else {
+        if (!pState.codec) {
+            pState.codec = new SteamOpus::Opus_FrameDecoder();
+            pState.codec->Init(5, 24000);
+        }
+        pState.effect = eff;
+    }
+    return 0;
 }
 
 LUA_FUNCTION_STATIC(eightbit_clearPlayer) {
