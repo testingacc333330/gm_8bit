@@ -38,12 +38,16 @@ jobs:
 
             - name: Génération du projet avec Premake
               run: |
+                  rm -rf projects/linux
                   premake5 --gmcommon=garrysmod_common gmake
 
             - name: Compilation Linux
               run: |
                   cd projects/linux/gmake
-                  make
+                  make clean
+                  make config=releasewithsymbols_x86
+                  
+                  make clean
                   make config=releasewithsymbols_x86_64
 
             - name: Upload artifact Linux x86
@@ -92,7 +96,7 @@ jobs:
               run: |
                   cd projects/windows/vs2022
                   $msbuild = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe
-                  & $msbuild eightbit.sln /p:Configuration=ReleaseWithSymbols /p:Platform=Win32
+                  & $msbuild eightbit.sln /t:Rebuild /p:Configuration=ReleaseWithSymbols /p:Platform=Win32
 
             - name: Upload artifact Windows x86
               uses: actions/upload-artifact@v4
@@ -105,7 +109,7 @@ jobs:
               run: |
                   cd projects/windows/vs2022
                   $msbuild = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe
-                  & $msbuild eightbit.sln /p:Configuration=ReleaseWithSymbols /p:Platform=x64
+                  & $msbuild eightbit.sln /t:Rebuild /p:Configuration=ReleaseWithSymbols /p:Platform=x64
 
             - name: Upload artifact Windows x64
               uses: actions/upload-artifact@v4
