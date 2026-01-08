@@ -64,7 +64,6 @@ void hook_BroadcastVoiceData(IClient* cl, uint nBytes, char* data, int64 xuid) {
 	}
 #endif
 
-	auto& afflicted_players = g_eightbit->afflictedPlayers;
 	if (g_eightbit->broadcastPackets && nBytes > sizeof(uint64_t)) {
 #if defined ARCHITECTURE_X86
         uint64_t id64 = *(uint64_t*)((char*)cl + 181);
