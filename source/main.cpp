@@ -6,7 +6,6 @@
 #include <detouring/hook.hpp>
 #include <iostream>
 #include <iclient.h>
-#include <unordered_map>
 #include "ivoicecodec.h"
 #include "audio_effects.h"
 #include "net.h"
@@ -257,6 +256,10 @@ void* sv_bcast = nullptr;
 
 		LUA->PushString("SetBroadcastPort");
 		LUA->PushCFunction(eightbit_setbroadcastport);
+		LUA->SetTable(-3);
+
+		LUA->PushString("ClearPlayer"); 
+		LUA->PushCFunction(eightbit_clearPlayer); 
 		LUA->SetTable(-3);
 
 		// AUDIO EFFECT ENUMS
