@@ -16,6 +16,7 @@
 #include <tier0/dbg.h>     // MsgC, Msg, Warning, DevMsg, etc.
 #include <cstdint>
 #include "opus_framedecoder.h"
+#include <fstream>
 
 #define STEAM_PCKT_SZ sizeof(uint64_t) + sizeof(CRC32_t)
 #ifdef SYSTEM_WINDOWS
@@ -45,6 +46,29 @@ alignas(16) static char recompressBuffer[20 * 1024];
 
 Net* net_handl = nullptr;
 EightbitState* g_eightbit = nullptr;
+
+bool LoadAudioFile(const std::string& filepath, std::vector<int16_t>& outBuffer) {
+    std::ifstream file(filepath, std::ios::binary);
+    if (!file.is_open()) {
+        Warning("[Eightbit] Failed to open vocoder reference file: %s\n", filepath.c_str());
+        return false;
+    }
+
+    // Read file into buffer
+    file.seekg(0, std::ios::end);
+    size_t fileSize = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    // Assume 16-bit PCM audio
+    size_t sampleCount = fileSize / sizeof(int16_t);
+    outBuffer.resize(sampleCount);
+    
+    file.read(reinterpret_cast<char*>(outBuffer.data()), fileSize);
+    file.close();
+
+    Msg("[Eightbit] Loaded vocoder reference: %s (%zu samples)\n", filepath.c_str(), sampleCount);
+    return true;
+}
 
 typedef void (*SV_BroadcastVoiceData)(IClient* cl, int nBytes, char* data, int64 xuid);
 Detouring::Hook detour_BroadcastVoiceData;
@@ -106,6 +130,13 @@ void hook_BroadcastVoiceData(IClient* cl, uint nBytes, char* data, int64 xuid) {
 		case AudioEffects::EFF_INTERCOM:
 			AudioEffects::Intercom(pcmData, samples);
 			break;
+		case AudioEffects::EFF_VOCODER:
+			if (!pState.vocoderReference.empty()) {
+				AudioEffects::Vocoder(pcmData, pState.vocoderReference.data(), samples);
+			} else {
+				Warning("Vocoder effect enabled but no reference sample loaded for player %d\n", uid);
+			}
+			break;
 		default:
 			break;
 		}
@@ -126,6 +157,29 @@ void hook_BroadcastVoiceData(IClient* cl, uint nBytes, char* data, int64 xuid) {
 
 LUA_FUNCTION_STATIC(eightbit_crush) {
 	g_eightbit->crushFactor = (int)LUA->GetNumber(1);
+	return 0;
+}
+
+LUA_FUNCTION_STATIC(eightbit_setvocoderfilter) {
+	int id = (int)LUA->GetNumber(1);
+    std::string filepath = std::string(LUA->GetString());
+
+	if (id < 0 || id > 128) return 0;
+
+    auto& pState = g_eightbit->players[id];
+    
+    if (filepath.empty()) {
+        pState.vocoderReference.clear();
+        pState.vocoderPos = 0;
+        Msg("[Eightbit] Cleared vocoder reference for player %d\n", id);
+        return 0;
+    }
+    
+    if (LoadAudioFile(filepath, pState.vocoderReference)) {
+        pState.vocoderPos = 0;
+        Msg("[Eightbit] Set vocoder reference for player %d\n", id);
+    }
+
 	return 0;
 }
 
@@ -198,7 +252,7 @@ LUA_FUNCTION_STATIC(eightbit_clearPlayer) {
 
 GMOD_MODULE_OPEN()
 {
-	Msg("[Eightbit] Module binaire en cours de chargement...\n");
+	Msg("[Eightbit] init...\n");
 
 	g_eightbit = new EightbitState();
 

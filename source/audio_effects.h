@@ -13,7 +13,8 @@ namespace AudioEffects {
 		EFF_DESAMPLE,
 		EFF_ROBOT,
         EFF_DEMON,
-		EFF_INTERCOM 
+		EFF_INTERCOM,
+        EFF_VOCODER
 	};
 
 	void BitCrush(uint16_t* sampleBuffer, int samples, float quant, float gainFactor) {
@@ -116,6 +117,37 @@ namespace AudioEffects {
             else if (mixed < -32768) mixed = -32768;
             
             buffer[i] = (int16_t)mixed;
+        }
+    }
+
+    // unusual parameters, but needed for customizability
+    void Vocoder(int16_t* carrier, int16_t* modulator, int samples) {
+        static int modPos = 0;
+        static float env = 0.0f;
+
+        const float attack = 0.3f;
+        const float release = 0.995f;
+        const float gain = 1.6f;
+
+        for (int i = 0; i < samples; i++) {
+            // --- Modulator envelope (audio file) ---
+            float m = (float)modulator[modPos++];
+            float absM = fabsf(m);
+
+            if (absM > env)
+                env = attack * absM + (1.0f - attack) * env;
+            else
+                env = release * env + (1.0f - release) * absM;
+
+            // --- Apply envelope to carrier (voice) ---
+            float c = (float)carrier[i];
+            float out = c * (env / 16000.0f) * gain;
+
+            // Clamp
+            if (out > 32767) out = 32767;
+            if (out < -32768) out = -32768;
+
+            carrier[i] = (int16_t)out;
         }
     }
 

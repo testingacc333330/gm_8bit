@@ -11,6 +11,10 @@ struct PlayerState {
     // Buffer pour l'écho
     std::vector<int16_t> echoBuffer;
     size_t echoPos = 0;
+    
+    // Vocoder reference sample
+    std::vector<int16_t> vocoderReference;
+    size_t vocoderPos = 0;
 };
 
 struct EightbitState {
