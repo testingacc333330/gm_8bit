@@ -132,7 +132,7 @@ void hook_BroadcastVoiceData(IClient* cl, uint nBytes, char* data, int64 xuid) {
 			break;
 		case AudioEffects::EFF_VOCODER:
 			if (!pState.vocoderReference.empty()) {
-				AudioEffects::Vocoder(pcmData, pState.vocoderReference.data(), samples);
+				AudioEffects::Vocoder(pcmData, pState.vocoderReference.data(), samples, pState.vocoderPos, pState.vocoderReference.size(), pState.vocoderEnv);
 			} else {
 				Warning("Vocoder effect enabled but no reference sample loaded for player %d\n", uid);
 			}

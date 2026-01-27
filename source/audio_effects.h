@@ -121,17 +121,16 @@ namespace AudioEffects {
     }
 
     // unusual parameters, but needed for customizability
-    void Vocoder(int16_t* carrier, int16_t* modulator, int samples) {
-        static int modPos = 0;
-        static float env = 0.0f;
-
-        const float attack = 0.3f;
-        const float release = 0.995f;
+    void Vocoder(int16_t* carrier, int16_t* modulator, int samples, size_t& modPos, size_t modulatorSize, float& env) {
+        const float attack  = 0.28f;
+        const float release = 0.992f;
         const float gain = 1.6f;
+
+        if (modulatorSize == 0) return;
 
         for (int i = 0; i < samples; i++) {
             // --- Modulator envelope (audio file) ---
-            float m = (float)modulator[modPos++];
+            float m = (float)modulator[modPos];
             float absM = fabsf(m);
 
             if (absM > env)
@@ -148,6 +147,9 @@ namespace AudioEffects {
             if (out < -32768) out = -32768;
 
             carrier[i] = (int16_t)out;
+            
+            // Advance position with wrapping
+            modPos = (modPos + 1) % modulatorSize;
         }
     }
 

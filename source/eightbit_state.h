@@ -15,6 +15,7 @@ struct PlayerState {
     // Vocoder reference sample
     std::vector<int16_t> vocoderReference;
     size_t vocoderPos = 0;
+    float vocoderEnv = 0.0f;
 };
 
 struct EightbitState {
