@@ -66,10 +66,6 @@ namespace AudioEffects {
         }
     }
 
-	// Utilisation d'une table de sinus pré-calculée pour la performance
-    static float sinTable[240]; 
-    static bool tableInit = false;
-
     void Robotize(int16_t* buffer, int samples, float freqHz, int sampleRate = 24000) {
         static float phase = 0.0f;
         float phaseIncrement = (2.0f * 3.14159f * freqHz) / (float)sampleRate;
