@@ -41,28 +41,55 @@ namespace AudioEffects {
 
 	//
 
+    void ApplyEcho(int16_t* buffer, int samples, std::vector<int16_t>& echoBuf, size_t& echoPos, float decay = 0.5f, int delaySamples = 4800) {
+        if (echoBuf.empty()) echoBuf.resize(24000, 0); // 1 sec buffer init
+
+        for (int i = 0; i < samples; i++) {
+            int16_t current = buffer[i];
+            
+            // Lire le sample passé (retardé)
+            size_t readPos = (echoPos + echoBuf.size() - delaySamples) % echoBuf.size();
+            int16_t delayed = echoBuf[readPos];
+
+            // Écrire le sample courant + feedback dans le buffer
+            // (Soft clipping simple pour éviter l'overflow immédiat)
+            int mixed = (int)(current + delayed * decay);
+            if (mixed > 32767) mixed = 32767;
+            if (mixed < -32768) mixed = -32768;
+
+            echoBuf[echoPos] = (int16_t)mixed;
+            
+            // Sortie audio
+            buffer[i] = (int16_t)mixed;
+
+            echoPos = (echoPos + 1) % echoBuf.size();
+        }
+    }
+
 	// Utilisation d'une table de sinus pré-calculée pour la performance
     static float sinTable[240]; 
     static bool tableInit = false;
 
-    void Robotize(int16_t* buffer, int samples, float freq = 60.0f) {
-        if (!tableInit) {
-            for(int i=0; i<240; i++) sinTable[i] = sinf(2.0f * 3.14159f * i / 240.0f);
-            tableInit = true;
-        }
+    void Robotize(int16_t* buffer, int samples, float freqHz, int sampleRate = 24000) {
+        static float phase = 0.0f;
+        float phaseIncrement = (2.0f * 3.14159f * freqHz) / (float)sampleRate;
+
         for (int i = 0; i < samples; i++) {
-            // Modulation en anneau : Voix * Sinus
-            float modulator = sinTable[i % 240]; 
+            float modulator = sinf(phase);
             buffer[i] = (int16_t)(buffer[i] * modulator);
+            
+            phase += phaseIncrement;
+            if (phase > 2.0f * 3.14159f) phase -= 2.0f * 3.14159f;
         }
     }
 
-    void Demon(int16_t* buffer, int samples, float pitch = 0.6f) {
-        // Pour un effet démoniaque simple, on combine BitCrush et un gain bas
-        for (int i = 0; i < samples; i++) {
-            float f = (float)buffer[i];
-            f = f * pitch; // Baisse le gain pour simuler une voix profonde
-            buffer[i] = (int16_t)(f * 1.5f); // Compensation de gain
+    void Demon(int16_t* buffer, int samples) {
+        Robotize(buffer, samples, 30.0f); // Modulation 30Hz (voix tremblante grave)
+        // + Saturation légère
+        for(int i=0; i<samples; i++) {
+            buffer[i] = buffer[i] * 1.5f; // Boost gain
+            if(buffer[i] > 20000) buffer[i] = 20000; // Hard clip
+            if(buffer[i] < -20000) buffer[i] = -20000;
         }
     }
 
@@ -80,8 +107,17 @@ namespace AudioEffects {
             if (highPassed > 15000) highPassed = 15000;
             if (highPassed < -15000) highPassed = -15000;
 
-            // 3. Réduction de fidélité (simule un petit haut-parleur)
-            buffer[i] = (int16_t)(highPassed * 0.8f);
+            int16_t noise = (rand() % 200) - 100; 
+        
+            // Mélange
+            int mixed = highPassed + noise;
+            
+            // Clamp (sécurité saturation)
+            if (mixed > 32767) mixed = 32767;
+            else if (mixed < -32768) mixed = -32768;
+            
+            buffer[i] = (int16_t)mixed;
         }
     }
+
 }
