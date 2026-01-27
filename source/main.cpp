@@ -284,6 +284,10 @@ void* sv_bcast = nullptr;
 		LUA->PushCFunction(eightbit_crush);
 		LUA->SetTable(-3);
 
+		LUA->PushString("SetVocoderFilter");
+		LUA->PushCFunction(eightbit_setvocoderfilter);
+		LUA->SetTable(-3);
+
 		LUA->PushString("GetCrushFactor");
 		LUA->PushCFunction(eightbit_getcrush);
 		LUA->SetTable(-3);

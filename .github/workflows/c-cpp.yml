@@ -153,7 +153,7 @@ jobs:
                   tag_name: v${{ github.run_number }}
                   name: v${{ github.run_number }}
                   body: |
-                      Voice Recorder Module - Build ${{ github.run_number }}
+                      8bit Module - Build ${{ github.run_number }}
 
                       Download the appropriate DLL for your platform and place it in garrysmod/lua/bin/
                   files: |
