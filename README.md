@@ -1,3 +1,7 @@
+# Note from me
+
+don't expect the changes to work as intended
+
 # gm_8bit
 
 A module for manipulating voice data in Garry's Mod.
