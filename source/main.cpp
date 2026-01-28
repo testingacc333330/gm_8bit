@@ -132,8 +132,7 @@ void hook_BroadcastVoiceData(IClient* cl, uint nBytes, char* data, int64 xuid) {
 			break;
 		case AudioEffects::EFF_VOCODER:
 			if (!pState.vocoderReference.empty()) {
-				// Use current tick as position reference (gpGlobals->tickcount from engine)
-				AudioEffects::Vocoder(pcmData, pState.vocoderReference.data(), samples, gpGlobals->tickcount, pState.vocoderStartTick, pState.vocoderReference.size(), pState.vocoderEnv, pState.vocoderAttack, pState.vocoderRelease, pState.vocoderGain);
+				AudioEffects::Vocoder(pcmData, pState.vocoderReference.data(), samples, pState.vocoderPos, pState.vocoderReference.size(), pState.vocoderEnv, pState.vocoderAttack, pState.vocoderRelease, pState.vocoderGain);
 			} else {
 				Warning("Vocoder effect enabled but no reference sample loaded for player %d\n", uid);
 			}
@@ -171,13 +170,13 @@ LUA_FUNCTION_STATIC(eightbit_setvocoderfilter) {
     
     if (filepath.empty()) {
         pState.vocoderReference.clear();
-        pState.vocoderStartTick = 0;
+        pState.vocoderPos = 0;
         Msg("[Eightbit] Cleared vocoder reference for player %d\n", id);
         return 0;
     }
     
     if (LoadAudioFile(filepath, pState.vocoderReference)) {
-        pState.vocoderStartTick = 0;
+        pState.vocoderPos = 0;
         Msg("[Eightbit] Set vocoder reference for player %d\n", id);
     }
 
@@ -212,6 +211,18 @@ LUA_FUNCTION_STATIC(eightbit_getcrush) {
 LUA_FUNCTION_STATIC(eightbit_setdesamplerate) {
 	g_eightbit->desampleRate = (int)LUA->GetNumber(1);
 	return 0;
+}
+
+LUA_FUNCTION_STATIC(eightbit_setvocoderpos) {
+    int id = (int)LUA->GetNumber(1);
+    int pos = (size_t)LUA->GetNumber(2);
+
+    if (id < 0 || id > 128) return 0;
+
+    auto& pState = g_eightbit->players[id];
+
+    pState.vocoderPos = pos;
+    return 0;
 }
 
 LUA_FUNCTION_STATIC(eightbit_enableEffect) {
@@ -324,6 +335,10 @@ void* sv_bcast = nullptr;
 
 		LUA->PushString("SetVocoderAttack");
 		LUA->PushCFunction(eightbit_setvocoderattack);
+		LUA->SetTable(-3);
+
+		LUA->PushString("SetVocoderPos");
+		LUA->PushCFunction(eightbit_setvocoderpos);
 		LUA->SetTable(-3);
 
 		LUA->PushString("SetVocoderRelease");
