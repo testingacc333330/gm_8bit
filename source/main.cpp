@@ -132,7 +132,7 @@ void hook_BroadcastVoiceData(IClient* cl, uint nBytes, char* data, int64 xuid) {
 			break;
 		case AudioEffects::EFF_VOCODER:
 			if (!pState.vocoderReference.empty()) {
-				AudioEffects::Vocoder(pcmData, pState.vocoderReference.data(), samples, pState.vocoderPos, pState.vocoderReference.size(), pState.vocoderEnv);
+				AudioEffects::Vocoder(pcmData, pState.vocoderReference.data(), samples, pState.vocoderPos, pState.vocoderReference.size(), pState.vocoderEnv, pState.vocoderAttack, pState.vocoderRelease, pState.vocoderGain);
 			} else {
 				Warning("Vocoder effect enabled but no reference sample loaded for player %d\n", uid);
 			}
@@ -249,6 +249,39 @@ LUA_FUNCTION_STATIC(eightbit_clearPlayer) {
     return 0;
 }
 
+LUA_FUNCTION_STATIC(eightbit_setvocoderattack) {
+	int id = (int)LUA->GetNumber(1);
+	float attack = (float)LUA->GetNumber(2);
+	
+	if (id < 0 || id > 128) return 0;
+	if (attack < 0.0f) attack = 0.0f;
+	
+	g_eightbit->players[id].vocoderAttack = attack;
+	return 0;
+}
+
+LUA_FUNCTION_STATIC(eightbit_setvocoderrelease) {
+	int id = (int)LUA->GetNumber(1);
+	float release = (float)LUA->GetNumber(2);
+	
+	if (id < 0 || id > 128) return 0;
+	if (release < 0.0f) release = 0.0f;
+	
+	g_eightbit->players[id].vocoderRelease = release;
+	return 0;
+}
+
+LUA_FUNCTION_STATIC(eightbit_setvocordergain) {
+	int id = (int)LUA->GetNumber(1);
+	float gain = (float)LUA->GetNumber(2);
+	
+	if (id < 0 || id > 128) return 0;
+	if (gain < 0.0f) gain = 0.0f;
+	
+	g_eightbit->players[id].vocoderGain = gain;
+	return 0;
+}
+
 
 GMOD_MODULE_OPEN()
 {
@@ -286,6 +319,18 @@ void* sv_bcast = nullptr;
 
 		LUA->PushString("SetVocoderFilter");
 		LUA->PushCFunction(eightbit_setvocoderfilter);
+		LUA->SetTable(-3);
+
+		LUA->PushString("SetVocoderAttack");
+		LUA->PushCFunction(eightbit_setvocoderattack);
+		LUA->SetTable(-3);
+
+		LUA->PushString("SetVocoderRelease");
+		LUA->PushCFunction(eightbit_setvocoderrelease);
+		LUA->SetTable(-3);
+
+		LUA->PushString("SetVocoderGain");
+		LUA->PushCFunction(eightbit_setvocordergain);
 		LUA->SetTable(-3);
 
 		LUA->PushString("GetCrushFactor");

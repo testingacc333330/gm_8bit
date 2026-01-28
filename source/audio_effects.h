@@ -121,11 +121,7 @@ namespace AudioEffects {
     }
 
     // unusual parameters, but needed for customizability
-    void Vocoder(int16_t* carrier, int16_t* modulator, int samples, size_t& modPos, size_t modulatorSize, float& env) {
-        const float attack  = 0.28f;
-        const float release = 0.992f;
-        const float gain = 1.6f;
-
+    void Vocoder(int16_t* carrier, int16_t* modulator, int samples, size_t& modPos, size_t modulatorSize, float& env, float attack, float release, float gain) {
         if (modulatorSize == 0) return;
 
         for (int i = 0; i < samples; i++) {
@@ -140,7 +136,9 @@ namespace AudioEffects {
 
             // --- Apply envelope to carrier (voice) ---
             float c = (float)carrier[i];
-            float out = c * (env / 16000.0f) * gain;
+            // Use normalized envelope (0.0 to 1.0 range)
+            float normalizedEnv = (env / 32767.0f);
+            float out = c * normalizedEnv * gain;
 
             // Clamp
             if (out > 32767) out = 32767;
