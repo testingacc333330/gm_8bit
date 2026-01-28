@@ -1,6 +1,9 @@
 # note from me
 
 don't expect the new changes to work
+if you ask yourself why so many release with super minor changes it's because my actions wont work locally
+
+so have fun with these 1 billion releases i guess?
 
 # gm_8bit
 

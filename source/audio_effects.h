@@ -121,8 +121,11 @@ namespace AudioEffects {
     }
 
     // unusual parameters, but needed for customizability
-    void Vocoder(int16_t* carrier, int16_t* modulator, int samples, size_t& modPos, size_t modulatorSize, float& env, float attack, float release, float gain) {
+    void Vocoder(int16_t* carrier, int16_t* modulator, int samples, uint32_t currentTick, uint32_t startTick, size_t modulatorSize, float& env, float attack, float release, float gain) {
         if (modulatorSize == 0) return;
+
+        uint32_t tickDiff = currentTick - startTick;
+        size_t modPos = (size_t)(tickDiff % modulatorSize);
 
         for (int i = 0; i < samples; i++) {
             // --- Modulator envelope (audio file) ---
@@ -145,9 +148,6 @@ namespace AudioEffects {
             if (out < -32768) out = -32768;
 
             carrier[i] = (int16_t)out;
-            
-            // Advance position with wrapping
-            modPos = (modPos + 1) % modulatorSize;
         }
     }
 

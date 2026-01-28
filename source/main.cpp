@@ -132,7 +132,8 @@ void hook_BroadcastVoiceData(IClient* cl, uint nBytes, char* data, int64 xuid) {
 			break;
 		case AudioEffects::EFF_VOCODER:
 			if (!pState.vocoderReference.empty()) {
-				AudioEffects::Vocoder(pcmData, pState.vocoderReference.data(), samples, pState.vocoderPos, pState.vocoderReference.size(), pState.vocoderEnv, pState.vocoderAttack, pState.vocoderRelease, pState.vocoderGain);
+				// Use current tick as position reference (gpGlobals->tickcount from engine)
+				AudioEffects::Vocoder(pcmData, pState.vocoderReference.data(), samples, gpGlobals->tickcount, pState.vocoderStartTick, pState.vocoderReference.size(), pState.vocoderEnv, pState.vocoderAttack, pState.vocoderRelease, pState.vocoderGain);
 			} else {
 				Warning("Vocoder effect enabled but no reference sample loaded for player %d\n", uid);
 			}
@@ -170,13 +171,13 @@ LUA_FUNCTION_STATIC(eightbit_setvocoderfilter) {
     
     if (filepath.empty()) {
         pState.vocoderReference.clear();
-        pState.vocoderPos = 0;
+        pState.vocoderStartTick = 0;
         Msg("[Eightbit] Cleared vocoder reference for player %d\n", id);
         return 0;
     }
     
     if (LoadAudioFile(filepath, pState.vocoderReference)) {
-        pState.vocoderPos = 0;
+        pState.vocoderStartTick = 0;
         Msg("[Eightbit] Set vocoder reference for player %d\n", id);
     }
 
