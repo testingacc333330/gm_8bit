@@ -15,7 +15,7 @@ struct PlayerState {
     // Vocoder reference sample
     std::vector<int16_t> vocoderReference;
     size_t vocoderPos = 0;
-    float vocoderEnv = 0.0f;
+    float vocoderEnv = 1.0f;
     float vocoderAttack = 0.15f;
     float vocoderRelease = 0.98f;
     float vocoderGain = 2.0f;
