@@ -128,8 +128,8 @@ namespace AudioEffects {
 
         for (int i = 0; i < samples; i++) {
             // --- Modulator envelope (audio file) ---
-            float m = (float)modulator[modPos];
-            float absM = fabsf(m);
+            float m = (float)modulator[i];
+            float absM = m;
 
             if (absM > env)
                 env = attack * absM + (1.0f - attack) * env;
