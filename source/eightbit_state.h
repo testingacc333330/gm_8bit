@@ -16,9 +16,10 @@ struct PlayerState {
     std::vector<int16_t> vocoderReference;
     size_t vocoderPos = 0;
     float vocoderEnv = 1.0f;
-    float vocoderAttack = 0.15f;
-    float vocoderRelease = 0.98f;
-    float vocoderGain = 2.0f;
+
+    float vocoderAttack = 0.01f;
+    float vocoderRelease = 0.0015f;
+    float vocoderGain = 1.2f;
 };
 
 struct EightbitState {

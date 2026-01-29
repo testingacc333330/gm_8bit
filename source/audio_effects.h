@@ -121,33 +121,27 @@ namespace AudioEffects {
     }
 
     // unusual parameters, but needed for customizability
-    void Vocoder(int16_t* carrier, int16_t* modulator, int samples, size_t& modPos, size_t modulatorSize, float& env, float attack, float release, float gain) {
-        if (modulatorSize == 0) return;
-
-        modPos = modPos % modulatorSize;
-
+    void Vocoder(int16_t* carrier,int16_t* modulator,int samples,float& env,float attack,float release,float gain) {
         for (int i = 0; i < samples; i++) {
-            // --- Modulator envelope (audio file) ---
-            float m = (float)modulator[i];
-            float absM = m;
+            float m = modulator[i] / 32768.0f;
+            float absM = m * m; // RMS-ish energy
 
             if (absM > env)
-                env = attack * absM + (1.0f - attack) * env;
+                env += (absM - env) * attack;
             else
-                env = release * env + (1.0f - release) * absM;
+                env += (absM - env) * release;
 
-            // --- Apply envelope to carrier (voice) ---
-            float c = (float)carrier[i];
-            // Use normalized envelope (0.0 to 1.0 range)
-            float normalizedEnv = (env / 32767.0f);
+            float c = carrier[i] / 32768.0f;
+
+            float normalizedEnv = sqrtf(env);
+            normalizedEnv = fmaxf(normalizedEnv, 0.02f);
+
             float out = c * normalizedEnv * gain;
 
-            // Clamp
-            if (out > 32767) out = 32767;
-            if (out < -32768) out = -32768;
-
-            carrier[i] = (int16_t)out;
+            out = fminf(fmaxf(out, -1.0f), 1.0f);
+            carrier[i] = (int16_t)(out * 32767.0f);
         }
     }
+
 
 }
