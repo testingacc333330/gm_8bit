@@ -133,7 +133,7 @@ void hook_BroadcastVoiceData(IClient* cl, uint nBytes, char* data, int64 xuid) {
 		case AudioEffects::EFF_VOCODER:
 			if (!pState.vocoderReference.empty()) {
 				Warning("Debuggy: Voice Samples: %d\n",samples);
-				AudioEffects::Vocoder(pcmData, pState.vocoderReference.data(), samples, pState.vocoderEnv, pState.vocoderAttack, pState.vocoderRelease, pState.vocoderGain);
+				AudioEffects::Vocoder(pcmData, pState.vocoderReference.data(),pState.vocoderRate, samples, pState.vocoderEnv, pState.vocoderAttack, pState.vocoderRelease, pState.vocoderGain);
 			} else {
 				Warning("Vocoder effect enabled but no reference sample loaded for player %d\n", uid);
 			}
@@ -223,6 +223,18 @@ LUA_FUNCTION_STATIC(eightbit_setvocoderpos) {
     auto& pState = g_eightbit->players[id];
 
     pState.vocoderPos = pos;
+    return 0;
+}
+
+LUA_FUNCTION_STATIC(eightbit_setvocoderrate) {
+    int id = (int)LUA->GetNumber(1);
+    int rate = (int)LUA->GetNumber(2);
+
+    if (id < 0 || id > 128) return 0;
+
+    auto& pState = g_eightbit->players[id];
+
+    pState.vocoderRate = rate;
     return 0;
 }
 
@@ -340,6 +352,10 @@ void* sv_bcast = nullptr;
 
 		LUA->PushString("SetVocoderPos");
 		LUA->PushCFunction(eightbit_setvocoderpos);
+		LUA->SetTable(-3);
+
+		LUA->PushString("SetVocoderRate");
+		LUA->PushCFunction(eightbit_setvocoderrate);
 		LUA->SetTable(-3);
 
 		LUA->PushString("SetVocoderRelease");

@@ -121,37 +121,38 @@ namespace AudioEffects {
     }
 
     // unusual parameters, but needed for customizability
-    void Vocoder(int16_t* carrier,int16_t* modulator,int samples,float& env,float attack,float release,float gain) {
-        // persistent DC blocker for modulator
-        static float modPrev = 0.0f;
+    void Vocoder(int16_t* carrier,int16_t* modulator,int samplerate,int samples,float& env,float attack,float release,float gain) {
+        float sampleRate = samplerate * 1.0f;
+
         static float dc = 0.0f;
+        static float modPrev = 0.0f;
+        static float smoothEnv = 0.0f;
+
+        float attackCoef  = 1.0f - expf(-1.0f / (attack  * sampleRate));
+        float releaseCoef = 1.0f - expf(-1.0f / (release * sampleRate));
 
         for (int i = 0; i < samples; i++) {
-            // normalize modulator
             float m = modulator[i] * (1.0f / 32768.0f);
 
-            // simple DC blocker (high-pass)
             dc = m - modPrev + 0.995f * dc;
             modPrev = m;
 
-            // envelope detection (rectified, NOT squared)
             float mag = fabsf(dc);
 
-            // proper attack / release smoothing
+            mag = fmaxf(mag - 0.01f, 0.0f);
+
             if (mag > env)
-                env += (mag - env) * attack;
+                env += (mag - env) * attackCoef;
             else
-                env += (mag - env) * release;
+                env += (mag - env) * releaseCoef;
 
-            // carrier
+            smoothEnv += (env - smoothEnv) * 0.05f;
+
+            float e = fmaxf(smoothEnv, 0.02f);
+
             float c = carrier[i] * (1.0f / 32768.0f);
-
-            // floor avoids total silence + zipper noise
-            float e = fmaxf(env, 0.015f);
-
             float out = c * e * gain;
 
-            // soft clip instead of hard clamp (sounds smoother)
             out = out / (1.0f + fabsf(out));
 
             carrier[i] = (int16_t)(out * 32767.0f);

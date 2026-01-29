@@ -19,6 +19,7 @@ struct PlayerState {
 
     float vocoderAttack = 0.01f;
     float vocoderRelease = 0.0015f;
+    int vocoderRate = 48000;
     float vocoderGain = 1.2f;
 };
 
