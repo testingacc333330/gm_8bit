@@ -122,26 +122,39 @@ namespace AudioEffects {
 
     // unusual parameters, but needed for customizability
     void Vocoder(int16_t* carrier,int16_t* modulator,int samples,float& env,float attack,float release,float gain) {
+        // persistent DC blocker for modulator
+        static float modPrev = 0.0f;
+        static float dc = 0.0f;
+
         for (int i = 0; i < samples; i++) {
-            float m = modulator[i] / 32768.0f;
-            float absM = m * m; // RMS-ish energy
+            // normalize modulator
+            float m = modulator[i] * (1.0f / 32768.0f);
 
-            if (absM > env)
-                env += (absM - env) * attack;
+            // simple DC blocker (high-pass)
+            dc = m - modPrev + 0.995f * dc;
+            modPrev = m;
+
+            // envelope detection (rectified, NOT squared)
+            float mag = fabsf(dc);
+
+            // proper attack / release smoothing
+            if (mag > env)
+                env += (mag - env) * attack;
             else
-                env += (absM - env) * release;
+                env += (mag - env) * release;
 
-            float c = carrier[i] / 32768.0f;
+            // carrier
+            float c = carrier[i] * (1.0f / 32768.0f);
 
-            float normalizedEnv = sqrtf(env);
-            normalizedEnv = fmaxf(normalizedEnv, 0.02f);
+            // floor avoids total silence + zipper noise
+            float e = fmaxf(env, 0.015f);
 
-            float out = c * normalizedEnv * gain;
+            float out = c * e * gain;
 
-            out = fminf(fmaxf(out, -1.0f), 1.0f);
+            // soft clip instead of hard clamp (sounds smoother)
+            out = out / (1.0f + fabsf(out));
+
             carrier[i] = (int16_t)(out * 32767.0f);
         }
     }
-
-
 }

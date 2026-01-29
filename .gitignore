@@ -2,3 +2,5 @@ projects/windows
 projects/linux
 
 .vscode
+.github
+.secrets
